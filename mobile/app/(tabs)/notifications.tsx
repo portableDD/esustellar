@@ -1,33 +1,35 @@
-import React, { useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, View, RefreshControl } from 'react-native';
 import Button from '../../components/ui/Button';
 import { scheduleLocalNotification } from '../../services/notifications/notificationService';
 import { useTheme } from '../../context/ThemeContext';
+import { useRefresh } from '../../hooks/useRefresh';
+import { useInvalidateNotifications } from '../../hooks/useNotifications';
 import { logger } from '../../utils/logger';
 
 export default function NotificationsScreen() {
   const [scheduling, setScheduling] = useState(false);
   const { colors } = useTheme();
+  const invalidateNotifications = useInvalidateNotifications();
+
+  const fetchData = useMemo(() => async () => {
+    logger.info('NotificationsScreen', 'Refreshing notifications');
+    await invalidateNotifications();
+  }, [invalidateNotifications]);
+
+  const { refreshing, onRefresh } = useRefresh(fetchData);
 
   const scheduleGroupNotification = async () => {
     setScheduling(true);
     logger.info('NotificationsScreen', 'Scheduling group notification');
-
     try {
       await scheduleLocalNotification({
         body: 'Tap to open the group detail screen.',
-        data: {
-          params: { groupId: '1' },
-          screen: 'groups/detail',
-        },
+        data: { params: { groupId: '1' }, screen: 'groups/detail' },
         seconds: 2,
         title: 'Contribution due',
       });
-
-      Alert.alert(
-        'Notification scheduled',
-        'A test notification will appear in 2 seconds.'
-      );
+      Alert.alert('Notification scheduled', 'A test notification will appear in 2 seconds.');
     } catch (err) {
       logger.error('NotificationsScreen', 'Failed to schedule notification', err);
       Alert.alert('Unable to schedule notification', 'Please try again.');
@@ -39,21 +41,14 @@ export default function NotificationsScreen() {
   const scheduleUnknownRouteNotification = async () => {
     setScheduling(true);
     logger.info('NotificationsScreen', 'Scheduling fallback notification');
-
     try {
       await scheduleLocalNotification({
         body: 'Tap to test the home-screen fallback route.',
-        data: {
-          screen: 'unsupported-screen',
-        },
+        data: { screen: 'unsupported-screen' },
         seconds: 2,
         title: 'Unknown destination',
       });
-
-      Alert.alert(
-        'Fallback notification scheduled',
-        'A test notification with an unknown route will appear in 2 seconds.'
-      );
+      Alert.alert('Fallback notification scheduled', 'A test notification with an unknown route will appear in 2 seconds.');
     } catch (err) {
       logger.error('NotificationsScreen', 'Failed to schedule fallback notification', err);
       Alert.alert('Unable to schedule notification', 'Please try again.');
@@ -64,53 +59,36 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+          />
+        }
+      >
         <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
         <Text style={[styles.subtitle, { color: colors.subtext }]}>
-          Trigger a local notification to verify foreground banners and tap
-          navigation.
+          Trigger a local notification to verify foreground banners and tap navigation.
         </Text>
-
-        <Button
-          disabled={scheduling}
-          onPress={scheduleGroupNotification}
-          style={styles.button}
-        >
+        <Button disabled={scheduling} onPress={scheduleGroupNotification} style={styles.button}>
           Schedule Group Detail Notification
         </Button>
-        <Button
-          disabled={scheduling}
-          onPress={scheduleUnknownRouteNotification}
-          style={styles.button}
-          variant="outline"
-        >
+        <Button disabled={scheduling} onPress={scheduleUnknownRouteNotification} style={styles.button} variant="outline">
           Schedule Fallback Notification
         </Button>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  button: {
-    marginBottom: 12,
-  },
+  container: { flex: 1 },
+  content: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  title: { fontSize: 28, fontWeight: '800', marginBottom: 12 },
+  subtitle: { fontSize: 15, lineHeight: 22, marginBottom: 24 },
+  button: { marginBottom: 12 },
 });

@@ -5,6 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { useTheme } from '../../context/ThemeContext';
 import { useRefresh } from '../../hooks/useRefresh';
+import { useInvalidateGroups } from '../../hooks/useGroups';
+import { useInvalidateTransactions } from '../../hooks/useTransactions';
+import { useInvalidateNotifications } from '../../hooks/useNotifications';
 import { triggerHapticFeedback } from '../../utils/haptics';
 import { logger } from '../../utils/logger';
 
@@ -51,9 +54,18 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
 
+  const invalidateGroups = useInvalidateGroups();
+  const invalidateTransactions = useInvalidateTransactions();
+  const invalidateNotifications = useInvalidateNotifications();
+
   const fetchData = useMemo(() => async () => {
     logger.info('HomeScreen', 'Refreshing home data');
-  }, []);
+    await Promise.all([
+      invalidateGroups(),
+      invalidateTransactions(),
+      invalidateNotifications(),
+    ]);
+  }, [invalidateGroups, invalidateTransactions, invalidateNotifications]);
 
   const { refreshing, onRefresh } = useRefresh(fetchData);
 
