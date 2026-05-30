@@ -25,9 +25,13 @@ class TransactionsApiService {
   }
 
   /**
-   * Get all transactions for a user
+   * Get all transactions for a user (paginated)
    */
-  async getUserTransactions(userAddress: string): Promise<ApiResponse<Transaction[]>> {
+  async getUserTransactions(
+    userAddress: string,
+    cursor?: string,
+    limit: number = 20
+  ): Promise<ApiResponse<Transaction[]>> {
     try {
       logger.debug('TransactionsApi', 'Fetching user transactions');
 
@@ -66,6 +70,59 @@ class TransactionsApiService {
       return {
         success: false,
         error: 'Failed to fetch transactions',
+      };
+    }
+  }
+
+  /**
+   * Get paginated transactions with cursor
+   */
+  async getPaginatedTransactions(
+    userAddress: string,
+    cursor?: string,
+    limit: number = 20
+  ): Promise<ApiResponse<{
+    transactions: Transaction[];
+    hasMore: boolean;
+    nextCursor?: string;
+    totalCount: number;
+  }>> {
+    try {
+      console.log(`Fetching paginated transactions for user: ${userAddress}`);
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const totalMockEntities = 50;
+      const allMockTx: Transaction[] = Array.from({ length: totalMockEntities }, (_, i) => ({
+        id: `tx_${i + 1}`,
+        groupId: `group_${(i % 3) + 1}`,
+        userAddress,
+        amount: (i + 1) * 100,
+        type: i % 2 === 0 ? 'contribution' : 'payout',
+        status: 'confirmed',
+        createdAt: new Date(Date.now() - i * 3600000).toISOString(),
+        txHash: `0xhash${i}${Date.now().toString(16)}`,
+      }));
+
+      const pageIndex = cursor ? parseInt(cursor, 10) : 0;
+      const startIndex = pageIndex * limit;
+      const endIndex = Math.min(startIndex + limit, allMockTx.length);
+      const pageTx = allMockTx.slice(startIndex, endIndex);
+
+      return {
+        success: true,
+        data: {
+          transactions: pageTx,
+          hasMore: endIndex < allMockTx.length,
+          nextCursor: endIndex < allMockTx.length ? String(pageIndex + 1) : undefined,
+          totalCount: allMockTx.length,
+        },
+      };
+    } catch (error) {
+      console.error('Failed to fetch paginated transactions:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch paginated transactions',
       };
     }
   }
