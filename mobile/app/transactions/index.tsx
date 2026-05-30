@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,23 +40,40 @@ export default function TransactionHistory() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
   const loadPage = useCallback(async (pageNum: number, reset = false) => {
-    if (pageNum === 0) setLoading(true); else setLoadingMore(true);
-    await new Promise((r) => setTimeout(r, 600));
-    const data = generateMockTransactions(pageNum);
-    setTransactions((prev) => (reset ? data : [...prev, ...data]));
-    setHasMore(pageNum < 2);
-    setPage(pageNum);
-    setLoading(false);
-    setLoadingMore(false);
+    if (pageNum === 0 && reset) {
+      setRefreshing(true);
+    } else if (pageNum === 0) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
+    try {
+      await new Promise((r) => setTimeout(r, 600));
+      const data = generateMockTransactions(pageNum);
+      setTransactions((prev) => (reset ? data : [...prev, ...data]));
+      setHasMore(pageNum < 2);
+      setPage(pageNum);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+      setRefreshing(false);
+    }
   }, []);
 
-  useEffect(() => { loadPage(0); }, [loadPage]);
+  useEffect(() => {
+    loadPage(0);
+  }, [loadPage]);
 
-  const handleRefresh = useCallback(() => loadPage(0, true), [loadPage]);
+  const handleRefresh = useCallback(() => {
+    if (loading || refreshing || loadingMore) return;
+    loadPage(0, true);
+  }, [loadPage, loading, refreshing, loadingMore]);
 
   const handleLoadMore = useCallback(() => {
     if (!loadingMore && hasMore) loadPage(page + 1);
@@ -92,8 +110,13 @@ export default function TransactionHistory() {
             transactions.length === 0 && styles.listEmpty,
           ]}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
-          onRefresh={handleRefresh}
-          refreshing={loading}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#6366F1"
+            />
+          }
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.3}
           ListEmptyComponent={
