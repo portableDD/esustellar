@@ -16,11 +16,13 @@ import { AnnouncementBanner } from '../components/announcements/AnnouncementBann
 import { NotificationBanner } from '../components/notifications/NotificationBanner';
 import { loadLanguage } from '../constants/i18n';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
-import { useAutoLock } from '../hooks/useAutoLock';
+import { useAutoLock, recordInteraction } from '../hooks/useAutoLock';
 import i18n from '../i18n';
 import { getRouteFromNotificationData } from '../services/notifications/notificationRouting';
 import { queryClient } from '../services/queryClient';
 import { biometricService } from '../services/security';
+import { registerAppUnlockHandler } from '../services/security/appLock';
+import { pinService } from '../services/security/pinService';
 import { logger } from '../services/logger';
 
 const ONBOARDING_KEY = 'onboardingComplete';
@@ -49,21 +51,43 @@ function RootLayoutContent() {
   const { colors } = useTheme();
   const { t } = useTranslation();
 
-  const promptBiometric = useCallback(async () => {
-    const enabled = await AsyncStorage.getItem(BIOMETRIC_LOCK_KEY);
+  const unlockApp = useCallback(async () => {
+    const biometricEnabled =
+      (await AsyncStorage.getItem(BIOMETRIC_LOCK_KEY)) === 'true';
+    const { isPinSet } = await pinService.getStatus();
 
-    if (enabled !== 'true') {
+    if (biometricEnabled) {
+      const result = await biometricService.authenticate(
+        t('lock.biometricPrompt', { appName: t('common.appName') }),
+      );
+
+      if (result.success) {
+        setLocked(false);
+        recordInteraction();
+        return;
+      }
+
+      if (isPinSet) {
+        router.push('/security/enter-pin?reason=biometric-fallback');
+      }
       return;
     }
 
-    const result = await biometricService.authenticate(
-      t('lock.biometricPrompt', { appName: t('common.appName') }),
-    );
-
-    if (result.success) {
-      setLocked(false);
+    if (isPinSet) {
+      router.push('/security/enter-pin?reason=auto-lock');
+      return;
     }
-  }, [t]);
+
+    setLocked(false);
+    recordInteraction();
+  }, [router, t]);
+
+  useEffect(() => {
+    return registerAppUnlockHandler(() => {
+      setLocked(false);
+      recordInteraction();
+    });
+  }, []);
 
   useEffect(() => {
     const subscription = AppState.addEventListener(
@@ -85,17 +109,17 @@ function RootLayoutContent() {
 
           if (enabled === 'true') {
             setLocked(true);
-            await promptBiometric();
+            await unlockApp();
           }
         }
       },
     );
 
     return () => subscription.remove();
-  }, [promptBiometric]);
+  }, [unlockApp]);
 
   useAutoLock(() => {
-    router.replace('/wallet/connect');
+    setLocked(true);
   });
 
   useEffect(() => {
@@ -203,7 +227,13 @@ function RootLayoutContent() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <View
+      style={[styles.root, { backgroundColor: colors.background }]}
+      onStartShouldSetResponderCapture={() => {
+        recordInteraction();
+        return false;
+      }}
+    >
       <Slot />
 
       <AnnouncementBanner />
@@ -224,7 +254,7 @@ function RootLayoutContent() {
       {locked && (
         <View style={styles.overlay}>
           <Text style={styles.overlayText}>{t('common.appName')}</Text>
-          <Text style={styles.lockHint} onPress={promptBiometric}>
+          <Text style={styles.lockHint} onPress={() => void unlockApp()}>
             {t('lock.tapToUnlock')}
           </Text>
         </View>

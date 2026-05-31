@@ -65,7 +65,7 @@ const ProfileScreen = React.memo(() => {
             accessibilityRole="button"
           >
             <Text style={styles.settingsLabel}>{t('profile.settings')}</Text>
-            <Text style={styles.chevron}>›</Text>
+            <Text style={styles.chevron}>{I18nManager.isRTL ? '‹' : '›'}</Text>
           </Pressable>
 
           <View style={styles.separator} />
@@ -78,7 +78,9 @@ const ProfileScreen = React.memo(() => {
             <Text style={[styles.settingsLabel, { color: '#EF4444' }]}>
               {t('profile.disconnectWallet')}
             </Text>
-            <Text style={[styles.chevron, { color: '#EF4444' }]}>›</Text>
+            <Text style={[styles.chevron, { color: '#EF4444' }]}>
+              {I18nManager.isRTL ? '‹' : '›'}
+            </Text>
           </Pressable>
         </View>
 
