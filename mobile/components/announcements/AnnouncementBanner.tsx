@@ -39,7 +39,7 @@ export const AnnouncementBanner: React.FC = () => {
         <Text>{announcement.message}</Text>
       </View>
       <TouchableOpacity onPress={() => dismiss(announcement.id)}>
-        <Text style={{ fontWeight: 'bold', paddingLeft: 12 }}>X</Text>
+        <Text style={{ fontWeight: 'bold', paddingStart: 12 }}>X</Text>
       </TouchableOpacity>
     </View>
   );

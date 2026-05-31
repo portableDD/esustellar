@@ -33,6 +33,12 @@ import {
 } from '../../services/security/securityPreferences';
 
 import {
+  getAutoLockTimeout,
+  setAutoLockTimeout as persistAutoLockTimeout,
+  AUTO_LOCK_OPTIONS,
+} from '../../hooks/useAutoLock';
+
+import {
   getLanguage,
   languageOptions,
   loadLanguage,
@@ -68,6 +74,7 @@ export default function SettingsScreen() {
     });
 
   const [biometricEnabledLocal, setBiometricEnabledLocal] = useState(false);
+  const [autoLockTimeout, setAutoLockTimeout] = useState(300);
 
   const [pinSet, setPinSet] = useState(false);
   const [pinLockoutRemainingMs, setPinLockoutRemainingMs] = useState(0);
@@ -87,16 +94,25 @@ export default function SettingsScreen() {
     let active = true;
 
     void (async () => {
-      const [cap, prefs, pinStatus, storedLang, storedToggle, storedHaptics, activeWalletEntry] =
-        await Promise.all([
-          biometricService.getCapability(),
-          getSecurityPreferences(),
-          pinService.getStatus(),
-          loadLanguage(),
-          AsyncStorage.getItem(BIOMETRIC_LOCK_KEY),
-          loadHapticsPreference(),
-          getActiveWallet(),
-        ]);
+      const [
+        cap,
+        prefs,
+        pinStatus,
+        storedLang,
+        storedToggle,
+        storedHaptics,
+        activeWalletEntry,
+        storedAutoLock,
+      ] = await Promise.all([
+        biometricService.getCapability(),
+        getSecurityPreferences(),
+        pinService.getStatus(),
+        loadLanguage(),
+        AsyncStorage.getItem(BIOMETRIC_LOCK_KEY),
+        loadHapticsPreference(),
+        getActiveWallet(),
+        getAutoLockTimeout(),
+      ]);
 
       if (!active) return;
 
@@ -107,10 +123,14 @@ export default function SettingsScreen() {
       setLanguage(storedLang);
       setBiometricEnabledLocal(storedToggle === 'true');
       setHapticsEnabledState(storedHaptics);
+      setAutoLockTimeout(storedAutoLock);
       setActiveWallet(activeWalletEntry);
 
       if (activeWalletEntry) {
-        setWallet({ publicKey: activeWalletEntry.publicKey, walletType: 'multiWallet' });
+        setWallet({
+          publicKey: activeWalletEntry.publicKey,
+          walletType: 'multiWallet',
+        });
       }
 
       setLoading(false);
@@ -119,7 +139,7 @@ export default function SettingsScreen() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [setWallet]);
 
   useFocusEffect(loadSecurityState);
 
@@ -482,6 +502,44 @@ export default function SettingsScreen() {
           <Button onPress={() => router.push('/wallet/recovery')}>
             Open Recovery Options
           </Button>
+        </View>
+
+        {/* Auto-lock */}
+        <View
+          style={[
+            styles.section,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Auto-lock after
+          </Text>
+          <View style={styles.row}>
+            {AUTO_LOCK_OPTIONS.map((option) => {
+              const selected = autoLockTimeout === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={async () => {
+                    setAutoLockTimeout(option.value);
+                    await persistAutoLockTimeout(option.value);
+                    void triggerHapticFeedback.selection();
+                  }}
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor: selected ? colors.accent : 'transparent',
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: selected ? '#FFFFFF' : colors.text }}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
         {/* About */}

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  I18nManager,
   SafeAreaView,
   ScrollView,
   View,
@@ -67,8 +68,12 @@ const ProfileScreen = React.memo(() => {
             onPress={() => router.push('/profile/settings')}
             accessibilityRole="button"
           >
-            <Text style={[styles.settingsLabel, { color: colors.text }]}>{t('profile.settings')}</Text>
-            <Text style={[styles.chevron, { color: colors.subtext }]}>›</Text>
+            <Text style={[styles.settingsLabel, { color: colors.text }]}>
+              {t('profile.settings')}
+            </Text>
+            <Text style={[styles.chevron, { color: colors.subtext }]}>
+              {I18nManager.isRTL ? '‹' : '›'}
+            </Text>
           </Pressable>
 
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
@@ -81,7 +86,9 @@ const ProfileScreen = React.memo(() => {
             <Text style={[styles.settingsLabel, { color: '#EF4444' }]}>
               {t('profile.disconnectWallet')}
             </Text>
-            <Text style={[styles.chevron, { color: '#EF4444' }]}>›</Text>
+            <Text style={[styles.chevron, { color: '#EF4444' }]}>
+              {I18nManager.isRTL ? '‹' : '›'}
+            </Text>
           </Pressable>
         </View>
 

@@ -123,9 +123,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#F8FAFC',
-    textAlign: 'right',
+    textAlign: I18nManager.isRTL ? 'left' : 'right',
     flex: 1,
-    paddingLeft: 12,
+    paddingStart: 12,
   },
   hashContainer: {
     width: '100%',

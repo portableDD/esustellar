@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: "800", color: "#F8FAFC", marginBottom: 6 },
   subtitle: { fontSize: 14, color: "#94A3B8", marginBottom: 8 },
   card: { backgroundColor: "#1E293B", borderRadius: 16, padding: 20 },
-  riskCard: { borderLeftWidth: 3, borderLeftColor: "#F59E0B" },
+  riskCard: { borderStartWidth: 3, borderStartColor: "#F59E0B" },
   riskText: { color: "#F59E0B", fontSize: 13, lineHeight: 18 },
   row: {
     flexDirection: "row",
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     color: "#F8FAFC",
     textAlign: "right",
     flex: 1,
-    paddingLeft: 12,
+    paddingStart: 12,
   },
   rowValueHighlight: { color: "#4ADE80", fontSize: 18 },
   rowValueWarn: { color: "#F59E0B" },
