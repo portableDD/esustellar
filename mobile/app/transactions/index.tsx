@@ -125,7 +125,7 @@ export default function TransactionHistory() {
   const listEmptyComponent = useMemo(
     () => (
       <EmptyState
-        icon="📭"
+        illustration="transactions"
         title="No transactions yet"
         message="Your contributions and payouts will appear here."
       />

@@ -166,7 +166,7 @@ export default function OnboardingScreen() {
 
       <Modal
         animationType="slide"
-        onRequestClose={() => setShowNotificationPrompt(false)}
+        onRequestClose={handleSkipNotifications}
         transparent
         visible={showNotificationPrompt}
       >
@@ -182,6 +182,7 @@ export default function OnboardingScreen() {
               accessibilityRole="button"
               disabled={submitting}
               onPress={handleAllowNotifications}
+              testID="notifications-allow"
               style={[
                 styles.primaryButton,
                 submitting ? styles.buttonDisabled : null,
@@ -194,6 +195,7 @@ export default function OnboardingScreen() {
               accessibilityRole="button"
               disabled={submitting}
               onPress={handleSkipNotifications}
+              testID="notifications-skip"
               style={styles.secondaryButton}
             >
               <Text style={styles.secondaryButtonText}>Skip for now</Text>
