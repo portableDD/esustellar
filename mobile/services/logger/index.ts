@@ -1,3 +1,5 @@
+export { logger } from '../../services/logger';
+export type { LogLevel } from '../../services/logger';
 // Define safe logging levels
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
